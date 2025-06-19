@@ -1,0 +1,199 @@
+/* Import global styles */
+@import url('./styles/globals.css');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@500;600;700&display=swap');
+
+/* Base styles */
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+    @apply bg-gray-900 text-gray-100;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overscroll-behavior-y: none;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', sans-serif;
+    @apply font-semibold;
+  }
+
+  #root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  main {
+    flex: 1;
+    padding-top: 4rem; /* Space for the fixed header */
+  }
+}
+
+/* Custom utilities */
+@layer utilities {
+  /* Custom button hover effects */
+  .btn-hover-effect {
+    @apply relative overflow-hidden;
+  }
+
+  .btn-hover-effect:after {
+    content: "";
+    @apply absolute top-0 -left-full w-full h-full bg-white bg-opacity-10 transition-all duration-300 z-[1];
+  }
+
+  .btn-hover-effect:hover::after {
+    @apply left-0;
+  }
+
+  /* Dark card style */
+  .dark-card {
+    @apply bg-gray-800 border border-gray-700 rounded-lg shadow-lg;
+  }
+
+  /* Video container */
+  .video-container {
+    @apply relative w-full rounded-lg overflow-hidden bg-black shadow-xl;
+    padding-bottom: 56.25%; /* 16:9 Aspect ratio */
+  }
+
+  .video-container video {
+    @apply absolute inset-0 w-full h-full object-cover;
+  }
+}
+
+/* Custom animations */
+@keyframes pulse-dark-red {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(139, 0, 0, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 15px rgba(139, 0, 0, 0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  0% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-pulse-dark-red {
+  animation: pulse-dark-red 2s infinite;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out;
+}
+
+/* Gradient backgrounds */
+.bg-dark-gradient {
+  background: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
+}
+
+.bg-dark-red-gradient {
+  background: linear-gradient(135deg, #660000 0%, #8B0000 100%);
+}
+
+/* Fix for iOS overscroll */
+html {
+  overflow: hidden;
+  height: 100%;
+}
+
+body {
+  overflow: auto;
+  height: 100%;
+  overscroll-behavior-y: none;
+}
+
+/* Improve focus visibility */
+:focus {
+  @apply outline-none ring-2 ring-dark-red-700;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-800;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-dark-red-700;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-dark-red-600;
+}
+
+/* Custom styles for video elements */
+video {
+  background-color: #1a1a1a;
+  border-radius: 0.5rem;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Animation utility classes */
+.animate-pulse-slow {
+  animation: pulse 2s infinite;
+}
+
+/* Custom gradient backgrounds */
+.bg-mesh-gradient {
+  background-color: #4158D0;
+  background-image: linear-gradient(43deg, #4158D0 0%, #C850C0 46%, #FFCC70 100%);
+}
