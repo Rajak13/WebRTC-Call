@@ -21,7 +21,7 @@ export default function useCallState() {
     hasVideo,
     isScreenSharing,
     startLocalStream,
-    stopLocalStream,
+    forceStopAllTracks,
     toggleAudio,
     toggleVideo,
     startScreenShare,
@@ -135,10 +135,17 @@ export default function useCallState() {
     try {
       console.log('Initializing media devices');
       
-      if (mediaInitializedRef.current && localStream) {
+      // Check if we already have a valid stream
+      if (mediaInitializedRef.current && localStream && localStream.active) {
         console.log('Media already initialized, using existing stream');
         updateLocalStream(localStream);
         return localStream;
+      }
+      
+      // Reset initialization flag if stream is not active
+      if (localStream && !localStream.active) {
+        console.log('Existing stream is not active, reinitializing');
+        mediaInitializedRef.current = false;
       }
       
       const stream = await startLocalStream();
@@ -148,6 +155,7 @@ export default function useCallState() {
       return stream;
     } catch (err) {
       console.error('Failed to initialize media:', err);
+      mediaInitializedRef.current = false;
       throw err;
     }
   }, [startLocalStream, localStream, updateLocalStream]);
@@ -275,12 +283,15 @@ export default function useCallState() {
       console.log('Component unmounting, cleaning up call state');
       isUnmounting.current = true;
       
-      // Perform cleanup operations
-      if (roomId) {
+      // Only perform cleanup if we're actually leaving the call (not just navigating within call pages)
+      // Check if we're still on a call page
+      const isOnCallPage = window.location.pathname.startsWith('/call');
+      
+      if (!isOnCallPage && roomId) {
         // Don't send HANGUP signal on unmount - this avoids triggering 
         // unnecessary events in a component that's going away
         closeConnection();
-        stopLocalStream();
+        forceStopAllTracks();
         
         // Clear all state to prevent any lingering effects
         setRoomId(null);
@@ -288,19 +299,22 @@ export default function useCallState() {
         mediaInitializedRef.current = false;
       }
     };
-  }, [roomId, closeConnection, stopLocalStream]);
+  }, [roomId, closeConnection, forceStopAllTracks]);
 
   // Update call status based on connection state
   useEffect(() => {
     console.log('Connection state changed to:', connectionState);
+    
+    // Only update call status if we're not in the middle of a call operation
     if (connectionState === 'connected') {
       setCallStatus('connected');
-    } else if (connectionState === 'disconnected') {
+    } else if (connectionState === 'disconnected' && callStatus !== 'connecting') {
+      // Only set to idle if we're not actively trying to connect
       setCallStatus('idle');
     } else if (connectionState === 'error') {
       setCallStatus('error');
     }
-  }, [connectionState]);
+  }, [connectionState, callStatus]);
 
   return {
     // Media state
@@ -323,5 +337,6 @@ export default function useCallState() {
     toggleAudio,
     toggleVideo,
     toggleScreenSharing,
+    forceStopAllTracks,
   };
 }
