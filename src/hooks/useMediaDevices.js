@@ -8,18 +8,20 @@ import { MediaError, handleWebRTCError } from '../utils/errorHandling';
  */
 export const useMediaDevices = () => {
   const [localStream, setLocalStream] = useState(null);
+  const localStreamRef = useRef(null);
   const [hasAudio, setHasAudio] = useState(true);
   const [hasVideo, setHasVideo] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const streamInitializedRef = useRef(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
 
   // Get access to user's camera and microphone
   const startLocalStream = useCallback(async (customConstraints = {}) => {
     // If we already have a stream, return it
-    if (localStream && streamInitializedRef.current) {
+    if (localStreamRef.current && streamInitializedRef.current) {
       console.log('Using existing local stream');
-      return localStream;
+      return localStreamRef.current;
     }
 
     console.log('Starting new local stream');
@@ -43,6 +45,7 @@ export const useMediaDevices = () => {
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       console.log('Media access granted, tracks:', stream.getTracks().length);
       
+      localStreamRef.current = stream;
       setLocalStream(stream);
       streamInitializedRef.current = true;
       setHasAudio(true);
@@ -56,31 +59,32 @@ export const useMediaDevices = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [localStream]);
+  }, []);
 
   // Stop all tracks in the stream and clear the state
   const stopLocalStream = useCallback(() => {
-    if (localStream) {
+    if (localStreamRef.current) {
       console.log('Stopping local stream tracks');
-      localStream.getTracks().forEach(track => {
+      localStreamRef.current.getTracks().forEach(track => {
         console.log(`Stopping ${track.kind} track`);
         track.stop();
       });
+      localStreamRef.current = null;
       setLocalStream(null);
       streamInitializedRef.current = false;
       setHasAudio(false);
       setHasVideo(false);
     }
-  }, [localStream]);
+  }, []);
 
   // Toggle audio on/off
   const toggleAudio = useCallback(() => {
-    if (!localStream) {
+    if (!localStreamRef.current) {
       console.warn('Cannot toggle audio: No local stream available');
       return;
     }
 
-    const audioTracks = localStream.getAudioTracks();
+    const audioTracks = localStreamRef.current.getAudioTracks();
     if (audioTracks.length === 0) {
       console.warn('No audio tracks found in local stream');
       return;
@@ -94,16 +98,16 @@ export const useMediaDevices = () => {
     });
 
     setHasAudio(enabled);
-  }, [localStream]);
+  }, []);
 
   // Toggle video on/off
   const toggleVideo = useCallback(() => {
-    if (!localStream) {
+    if (!localStreamRef.current) {
       console.warn('Cannot toggle video: No local stream available');
       return;
     }
 
-    const videoTracks = localStream.getVideoTracks();
+    const videoTracks = localStreamRef.current.getVideoTracks();
     if (videoTracks.length === 0) {
       console.warn('No video tracks found in local stream');
       return;
@@ -117,21 +121,13 @@ export const useMediaDevices = () => {
     });
 
     setHasVideo(enabled);
-  }, [localStream]);
+  }, []);
 
   // Share screen instead of camera
   const startScreenShare = useCallback(async () => {
     try {
       console.log('Starting screen share');
       
-      // Stop camera stream if it's active
-      if (localStream) {
-        localStream.getVideoTracks().forEach(track => {
-          console.log('Stopping video track before screen share');
-          track.stop();
-        });
-      }
-
       // Get screen sharing stream
       console.log('Requesting screen sharing access');
       const screenStream = await navigator.mediaDevices.getDisplayMedia({
@@ -145,8 +141,8 @@ export const useMediaDevices = () => {
       // Keep audio tracks from original stream if they exist
       const tracks = [...screenStream.getTracks()];
       
-      if (localStream) {
-        const audioTracks = localStream.getAudioTracks();
+      if (localStreamRef.current) {
+        const audioTracks = localStreamRef.current.getAudioTracks();
         if (audioTracks.length > 0) {
           console.log('Adding audio tracks to screen share stream');
           tracks.push(...audioTracks);
@@ -157,15 +153,18 @@ export const useMediaDevices = () => {
       const combinedStream = new MediaStream(tracks);
       console.log(`Combined stream created with ${tracks.length} tracks`);
       
+      // Update both ref and state
+      localStreamRef.current = combinedStream;
       setLocalStream(combinedStream);
       streamInitializedRef.current = true;
       setHasVideo(true);
+      setIsScreenSharing(true);
       
       // Add event listener for when user stops sharing screen
       screenStream.getVideoTracks()[0].onended = () => {
-        // Automatically switch back to camera when screen sharing is stopped
-        console.log('Screen sharing ended by user, switching back to camera');
-        startLocalStream();
+        // Screen sharing ended by user, but we'll handle switching back in toggleScreenSharing
+        console.log('Screen sharing ended by user');
+        setIsScreenSharing(false);
       };
       
       return combinedStream;
@@ -175,15 +174,23 @@ export const useMediaDevices = () => {
       setError(errorInfo.userMessage);
       throw new MediaError(errorInfo.userMessage, errorInfo.errorCode);
     }
-  }, [localStream, startLocalStream]);
+  }, []);
+
+  // Toggle screen sharing state
+  const toggleScreenSharingState = useCallback(() => {
+    setIsScreenSharing(!isScreenSharing);
+  }, [isScreenSharing]);
 
   // Clean up resources when component unmounts
   useEffect(() => {
     return () => {
       console.log('useMediaDevices unmounting, cleaning up');
-      stopLocalStream();
+      // Don't stop the stream if we're screen sharing, as it will be handled by the screen sharing logic
+      if (!isScreenSharing && localStreamRef.current) {
+        stopLocalStream();
+      }
     };
-  }, [stopLocalStream]);
+  }, [stopLocalStream, isScreenSharing]);
 
   return {
     localStream,
@@ -192,8 +199,10 @@ export const useMediaDevices = () => {
     toggleAudio,
     toggleVideo,
     startScreenShare,
+    toggleScreenSharingState,
     hasAudio,
     hasVideo,
+    isScreenSharing,
     isLoading,
     error,
   };

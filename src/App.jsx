@@ -12,39 +12,29 @@ import './styles/Pages.css';
 import './styles/UI.css';
 import './styles/VideoCall.css';
 
-// Create router with routes and wrap components with their own CallProvider
+// Create router with routes using Component property
 const router = createBrowserRouter([
   {
     path: '/',
-    element: (
-      <CallProvider>
-        <HomePage />
-      </CallProvider>
-    ),
+    Component: HomePage,
     errorElement: <ErrorPage />,
   },
   {
     path: '/call',
-    element: (
-      <CallProvider>
-        <CallPage />
-      </CallProvider>
-    ),
+    Component: CallPage,
   },
   {
     path: '/call/:roomId',
-    element: (
-      <CallProvider>
-        <CallPage />
-      </CallProvider>
-    ),
+    Component: CallPage,
   },
 ]);
 
 function App() {
   return (
     <AuthProvider>
-      <RouterProvider router={router} />
+      <CallProvider>
+        <RouterProvider router={router} />
+      </CallProvider>
     </AuthProvider>
   )
 }

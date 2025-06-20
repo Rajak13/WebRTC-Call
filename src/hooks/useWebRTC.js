@@ -6,127 +6,72 @@ import { ConnectionError, handleWebRTCError } from '../utils/errorHandling';
  * Custom hook to manage WebRTC peer connection
  * This handles the actual peer-to-peer connection between users
  */
-const useWebRTC = (localStream, onSignalNeeded) => {
-  const [connectionState, setConnectionState] = useState(CALL_STATES.IDLE);
+const useWebRTC = (onSignalNeeded) => {
+  const [connectionState, setConnectionState] = useState(CALL_STATES.DISCONNECTED);
   const [remoteStream, setRemoteStream] = useState(null);
   const [error, setError] = useState(null);
   
-  // Use refs to maintain references across renders
+  // Use refs to store streams and connections to prevent recreation
+  const localStreamRef = useRef(null);
   const peerConnectionRef = useRef(null);
-  const iceCandidatesQueueRef = useRef([]);
   const connectionTimeoutRef = useRef(null);
-  const localStreamRef = useRef(localStream);
+  const iceCandidatesQueueRef = useRef([]);
 
-  // Keep the local stream ref updated
-  useEffect(() => {
-    localStreamRef.current = localStream;
-  }, [localStream]);
+  // Function to update the local stream ref
+  const updateLocalStream = useCallback((stream) => {
+    localStreamRef.current = stream;
+  }, []);
 
-  // Initialize a new RTCPeerConnection
+  // Create a new RTCPeerConnection
   const createPeerConnection = useCallback(() => {
-    try {
-      console.log('Creating new RTCPeerConnection');
-      // Create new connection with the provided ICE servers
-      const peerConnection = new RTCPeerConnection(WEBRTC_CONFIG);
-      
-      // Handle ICE candidate events
-      peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-          console.log('ICE candidate generated:', event.candidate.candidate.substring(0, 50) + '...');
-          // Send this ICE candidate to the remote peer via signaling
+    console.log('Creating new RTCPeerConnection');
+    
+    const peerConnection = new RTCPeerConnection(WEBRTC_CONFIG);
+    peerConnectionRef.current = peerConnection;
+    
+    // Set up event handlers
+    peerConnection.onicecandidate = (event) => {
+      if (event.candidate) {
+        console.log('ICE candidate generated:', event.candidate.candidate);
+        if (typeof onSignalNeeded === 'function') {
           onSignalNeeded({
-            type: 'iceCandidate',
+            type: 'ice-candidate',
             candidate: event.candidate,
-          });
+          }).catch(err => console.error('Error sending ICE candidate:', err));
         }
-      };
-      
-      // Handle connection state changes
-      peerConnection.onconnectionstatechange = () => {
-        console.log('Connection state changed to:', peerConnection.connectionState);
-        switch (peerConnection.connectionState) {
-          case 'connected':
-            console.log('WebRTC connection established successfully!');
-            setConnectionState(CALL_STATES.CONNECTED);
-            // Clear any connection timeout
-            if (connectionTimeoutRef.current) {
-              clearTimeout(connectionTimeoutRef.current);
-              connectionTimeoutRef.current = null;
-            }
-            break;
-          case 'connecting':
-            console.log('WebRTC connection in progress...');
-            setConnectionState(CALL_STATES.CONNECTING);
-            break;
-          case 'disconnected':
-          case 'closed':
-            console.log('WebRTC connection closed or disconnected');
-            setConnectionState(CALL_STATES.DISCONNECTED);
-            break;
-          case 'failed':
-            console.error('WebRTC connection failed');
-            setConnectionState(CALL_STATES.ERROR);
-            setError('Connection failed. Please try again.');
-            break;
-          default:
-            console.log('Connection state:', peerConnection.connectionState);
-            break;
-        }
-      };
-      
-      // Handle ICE connection state changes
-      peerConnection.oniceconnectionstatechange = () => {
-        console.log('ICE connection state changed to:', peerConnection.iceConnectionState);
-        if (peerConnection.iceConnectionState === 'failed') {
-          console.warn('ICE connection failed');
-          setConnectionState(CALL_STATES.ERROR);
-          setError('Network connection failed. Try using a different network.');
-        } else if (peerConnection.iceConnectionState === 'connected') {
-          console.log('ICE connection established');
-          setConnectionState(CALL_STATES.CONNECTED);
-        } else if (peerConnection.iceConnectionState === 'checking') {
-          console.log('ICE connection checking');
-          setConnectionState(CALL_STATES.CONNECTING);
-        }
-      };
-      
-      // Handle ICE gathering state changes
-      peerConnection.onicegatheringstatechange = () => {
-        console.log('ICE gathering state changed to:', peerConnection.iceGatheringState);
-      };
-      
-      // Handle signaling state changes
-      peerConnection.onsignalingstatechange = () => {
-        console.log('Signaling state changed to:', peerConnection.signalingState);
-      };
-      
-      // Set up remote stream handling
-      peerConnection.ontrack = (event) => {
-        console.log('Remote track received:', event.track.kind);
-        // Create a new MediaStream from the received tracks
-        const stream = new MediaStream();
-        event.streams[0].getTracks().forEach(track => {
-          stream.addTrack(track);
-        });
-        setRemoteStream(stream);
-      };
-      
-      peerConnectionRef.current = peerConnection;
-      return peerConnection;
-    } catch (err) {
-      const errorInfo = handleWebRTCError(err, 'createPeerConnection');
-      setError(errorInfo.userMessage);
-      setConnectionState(CALL_STATES.ERROR);
-      throw new ConnectionError(errorInfo.userMessage, errorInfo.errorCode);
-    }
+      }
+    };
+    
+    peerConnection.ontrack = (event) => {
+      console.log('Received remote track:', event.track.kind);
+      setRemoteStream(event.streams[0]);
+    };
+    
+    peerConnection.onconnectionstatechange = () => {
+      console.log('Connection state changed to:', peerConnection.connectionState);
+      setConnectionState(peerConnection.connectionState);
+    };
+    
+    peerConnection.oniceconnectionstatechange = () => {
+      console.log('ICE connection state changed to:', peerConnection.iceConnectionState);
+    };
+    
+    peerConnection.onsignalingstatechange = () => {
+      console.log('Signaling state changed to:', peerConnection.signalingState);
+    };
+    
+    peerConnection.onicegatheringstatechange = () => {
+      console.log('ICE gathering state changed to:', peerConnection.iceGatheringState);
+    };
+    
+    return peerConnection;
   }, [onSignalNeeded]);
   
   // Add local tracks to the peer connection
   const addLocalTracks = useCallback((peerConnection) => {
     const stream = localStreamRef.current;
-    
     if (!stream) {
-      console.warn('No local stream available to add tracks');
+      console.warn('No local stream available for adding tracks');
       return;
     }
     
@@ -141,6 +86,39 @@ const useWebRTC = (localStream, onSignalNeeded) => {
       });
     } catch (err) {
       const errorInfo = handleWebRTCError(err, 'addLocalTracks');
+      setError(errorInfo.userMessage);
+    }
+  }, []);
+  
+  // Replace local tracks (for screen sharing)
+  const replaceLocalTracks = useCallback((newStream) => {
+    if (!peerConnectionRef.current) {
+      console.warn('No peer connection available for replacing tracks');
+      return;
+    }
+    
+    try {
+      console.log('Replacing local tracks in peer connection');
+      
+      // Get all senders currently in the peer connection
+      const senders = peerConnectionRef.current.getSenders();
+      
+      // Replace video tracks and keep audio tracks
+      newStream.getTracks().forEach(newTrack => {
+        const sender = senders.find(s => s.track && s.track.kind === newTrack.kind);
+        
+        if (sender) {
+          // Replace existing track
+          sender.replaceTrack(newTrack);
+          console.log(`Replaced ${newTrack.kind} track in peer connection`);
+        } else {
+          // Add new track if no sender exists for this kind
+          peerConnectionRef.current.addTrack(newTrack, newStream);
+          console.log(`Added new ${newTrack.kind} track to peer connection`);
+        }
+      });
+    } catch (err) {
+      const errorInfo = handleWebRTCError(err, 'replaceLocalTracks');
       setError(errorInfo.userMessage);
     }
   }, []);
@@ -359,25 +337,6 @@ const useWebRTC = (localStream, onSignalNeeded) => {
     setError(null);
   }, []);
   
-  // Update local tracks when the localStream changes
-  useEffect(() => {
-    if (peerConnectionRef.current && localStream) {
-      console.log('Local stream changed, updating tracks in peer connection');
-      
-      // Get all senders currently in the peer connection
-      const senders = peerConnectionRef.current.getSenders();
-      const currentTracks = senders.map(sender => sender.track);
-      
-      // Add any new tracks from localStream that aren't already in the connection
-      localStream.getTracks().forEach(track => {
-        if (!currentTracks.includes(track)) {
-          peerConnectionRef.current.addTrack(track, localStream);
-          console.log(`Added new ${track.kind} track to peer connection`);
-        }
-      });
-    }
-  }, [localStream]);
-
   // Clean up when component unmounts
   useEffect(() => {
     return () => {
@@ -400,6 +359,8 @@ const useWebRTC = (localStream, onSignalNeeded) => {
     handleAnswer,
     handleIceCandidate,
     closeConnection,
+    replaceLocalTracks,
+    updateLocalStream,
   };
 };
 

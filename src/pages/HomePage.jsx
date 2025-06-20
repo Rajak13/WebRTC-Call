@@ -122,7 +122,10 @@ const HomePage = () => {
                 <div className="call-card-action">
                     <Button 
                       variant="outline" 
-                      onClick={() => setIsJoinModalOpen(true)}
+                      onClick={() => {
+                        console.log('Join Existing Call button clicked');
+                        setIsJoinModalOpen(true);
+                      }}
                       fullWidth
                     >
                       Join Existing Call
@@ -189,7 +192,6 @@ const HomePage = () => {
         isOpen={isJoinModalOpen}
         onClose={() => setIsJoinModalOpen(false)}
         title="Join a Call"
-        size="sm"
         footer={
           <>
             <Button 

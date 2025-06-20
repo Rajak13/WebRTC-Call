@@ -14,19 +14,18 @@ export default function useCallState() {
   const hasEndedCallRef = useRef(false);
   const mediaInitializedRef = useRef(false);
 
-  // Room state
-  const [isScreenSharing, setIsScreenSharing] = useState(false);
-  
   // Get access to media devices
   const {
     localStream,
     hasAudio,
     hasVideo,
+    isScreenSharing,
     startLocalStream,
     stopLocalStream,
     toggleAudio,
     toggleVideo,
     startScreenShare,
+    toggleScreenSharingState,
     error: mediaError,
   } = useMediaDevices();
 
@@ -49,7 +48,9 @@ export default function useCallState() {
     handleAnswer,
     handleIceCandidate,
     closeConnection,
-  } = useWebRTC(localStream, sendSignal);
+    replaceLocalTracks,
+    updateLocalStream,
+  } = useWebRTC(sendSignal);
 
   // Aggregate error from various sources
   const error = mediaError || signalingError || webrtcError;
@@ -78,7 +79,6 @@ export default function useCallState() {
     closeConnection();
     setRoomId(null);
     roomIdRef.current = null; // Also clear the ref to prevent stale values
-    setIsScreenSharing(false);
     setCallStatus('idle');
     mediaInitializedRef.current = false;
   }, [roomId, connectionState, sendSignal, closeConnection]);
@@ -123,6 +123,13 @@ export default function useCallState() {
     return cleanup;
   }, [roomId, connectionState, handleOffer, handleAnswer, handleIceCandidate, endCall, listenForSignals]);
 
+  // Update WebRTC hook when local stream changes
+  useEffect(() => {
+    if (localStream) {
+      updateLocalStream(localStream);
+    }
+  }, [localStream, updateLocalStream]);
+
   // Initialize media before starting a call
   const initializeMedia = useCallback(async () => {
     try {
@@ -130,18 +137,20 @@ export default function useCallState() {
       
       if (mediaInitializedRef.current && localStream) {
         console.log('Media already initialized, using existing stream');
+        updateLocalStream(localStream);
         return localStream;
       }
       
       const stream = await startLocalStream();
       console.log('Media devices initialized successfully');
       mediaInitializedRef.current = true;
+      updateLocalStream(stream);
       return stream;
     } catch (err) {
       console.error('Failed to initialize media:', err);
       throw err;
     }
-  }, [startLocalStream, localStream]);
+  }, [startLocalStream, localStream, updateLocalStream]);
 
   // Start a new call (create a room)
   const startCall = useCallback(async () => {
@@ -236,15 +245,26 @@ export default function useCallState() {
   const toggleScreenSharing = useCallback(async () => {
     try {
       if (isScreenSharing) {
-        await startLocalStream();
+        // Switch back to camera
+        const cameraStream = await startLocalStream();
+        if (cameraStream && replaceLocalTracks) {
+          replaceLocalTracks(cameraStream);
+          updateLocalStream(cameraStream);
+        }
+        toggleScreenSharingState();
       } else {
-        await startScreenShare();
+        // Start screen sharing
+        const screenStream = await startScreenShare();
+        if (screenStream && replaceLocalTracks) {
+          replaceLocalTracks(screenStream);
+          updateLocalStream(screenStream);
+        }
+        toggleScreenSharingState();
       }
-      setIsScreenSharing(!isScreenSharing);
     } catch (err) {
       console.error('Error toggling screen share:', err);
     }
-  }, [isScreenSharing, startLocalStream, startScreenShare]);
+  }, [isScreenSharing, startLocalStream, startScreenShare, replaceLocalTracks, toggleScreenSharingState, updateLocalStream]);
 
   // Clean up when component unmounts
   useEffect(() => {
@@ -265,7 +285,6 @@ export default function useCallState() {
         // Clear all state to prevent any lingering effects
         setRoomId(null);
         roomIdRef.current = null;
-        setIsScreenSharing(false);
         mediaInitializedRef.current = false;
       }
     };
