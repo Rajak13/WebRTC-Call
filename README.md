@@ -1,5 +1,7 @@
 # WebRTC Connect - Video Chat Application
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Online-brightgreen)](https://rajak-web-rtc-call.vercel.app/)
+
 A modern, real-time video chat application built with React, WebRTC, and Supabase for signaling.
 
 ## Features
