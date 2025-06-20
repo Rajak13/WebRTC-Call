@@ -187,12 +187,8 @@ export default function useCallState() {
       console.log('Step 4: Updating room ID ref');
       roomIdRef.current = newRoomId;
       
-      // Step 5: Wait a moment to ensure all state updates have been processed
-      console.log('Step 5: Waiting for state updates');
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Step 6: Now create the offer with the room ID available
-      console.log('Step 6: Creating WebRTC offer');
+      // Step 5: Now create the offer with the room ID available
+      console.log('Step 5: Creating WebRTC offer');
       await createOffer();
       console.log('Offer created successfully');
       
@@ -234,9 +230,10 @@ export default function useCallState() {
       console.log('Step 4: Updating room ID ref');
       roomIdRef.current = validatedRoomId;
       
-      // Step 5: Wait a moment to ensure all state updates have been processed
-      console.log('Step 5: Waiting for state updates');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Step 5: Now create the offer with the room ID available
+      console.log('Step 5: Creating WebRTC offer');
+      await createOffer();
+      console.log('Offer created successfully');
       
       // Update call status
       console.log('Setting call status to connecting');

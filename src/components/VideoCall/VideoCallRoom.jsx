@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import '../../styles/VideoCall.css';
 import CallControls from './CallControls';
 import ConnectionStatus from './ConnectionStatus';
@@ -13,16 +13,37 @@ const VideoCallRoom = ({
   onToggleVideo, 
   onToggleScreenShare,
   onEndCall,
+  onInviteClick,
   isMuted = false,
   isVideoOff = false,
   isScreenSharing = false,
   className = ""
 }) => {
   const [layout, setLayout] = useState('grid'); // 'grid', 'spotlight'
+  const [isMobile, setIsMobile] = useState(false);
   
   // Convert single remoteStream to array for consistent handling
   const remoteStreams = remoteStream ? [remoteStream] : [];
   const peerCount = remoteStreams.length;
+
+  // Check if device is mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Auto-switch to spotlight layout on mobile when there are remote participants
+  useEffect(() => {
+    if (isMobile && peerCount > 0 && layout === 'grid') {
+      setLayout('spotlight');
+    }
+  }, [isMobile, peerCount, layout]);
 
   // Toggle between grid and spotlight layout
   const toggleLayout = () => {
@@ -39,12 +60,13 @@ const VideoCallRoom = ({
         />
       </div>
       
-      {/* Layout toggle button */}
-      {peerCount > 0 && (
+      {/* Layout toggle button - only show on desktop or when multiple participants */}
+      {(!isMobile || peerCount > 1) && peerCount > 0 && (
         <button
           onClick={toggleLayout}
           className="layout-toggle-button"
-          aria-label="Toggle layout"
+          aria-label={`Switch to ${layout === 'grid' ? 'spotlight' : 'grid'} layout`}
+          title={`Switch to ${layout === 'grid' ? 'spotlight' : 'grid'} layout`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="layout-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             {layout === 'grid' ? (
@@ -60,7 +82,7 @@ const VideoCallRoom = ({
       <div className="video-container">
         {/* Grid layout - shows all videos in a responsive grid */}
         {layout === 'grid' ? (
-          <div className={`video-grid ${getGridCols(peerCount)}`}>
+          <div className={`video-grid ${getGridCols(peerCount, isMobile)}`}>
             {/* Local video */}
             <div className="video-wrapper">
               <LocalVideo 
@@ -108,9 +130,9 @@ const VideoCallRoom = ({
             </div>
 
             {/* Thumbnail videos */}
-            <div className="thumbnail-strip">
-              {/* Always add local video to thumbnails in spotlight mode */}
-              {remoteStreams.length > 0 && (
+            {remoteStreams.length > 0 && (
+              <div className="thumbnail-strip">
+                {/* Always add local video to thumbnails in spotlight mode */}
                 <div className="thumbnail-video">
                   <LocalVideo 
                     stream={localStream} 
@@ -119,21 +141,21 @@ const VideoCallRoom = ({
                     className="thumbnail-stream"
                   />
                 </div>
-              )}
-              
-              {/* Skip first remote video (shown as main) and add the rest */}
-              {remoteStreams.slice(1).map((stream, index) => (
-                <div key={index} className="thumbnail-video">
-                  <RemoteVideo 
-                    stream={stream} 
-                    username={`Peer ${index + 2}`}
-                    hasAudio={true} 
-                    hasVideo={true}
-                    className="thumbnail-stream"
-                  />
-                </div>
-              ))}
-            </div>
+                
+                {/* Skip first remote video (shown as main) and add the rest */}
+                {remoteStreams.slice(1).map((stream, index) => (
+                  <div key={index} className="thumbnail-video">
+                    <RemoteVideo 
+                      stream={stream} 
+                      username={`Peer ${index + 2}`}
+                      hasAudio={true} 
+                      hasVideo={true}
+                      className="thumbnail-stream"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -145,6 +167,7 @@ const VideoCallRoom = ({
           onToggleVideo={onToggleVideo} 
           onToggleScreenShare={onToggleScreenShare}
           onEndCall={onEndCall}
+          onInviteClick={onInviteClick}
           isMuted={isMuted}
           isVideoOff={isVideoOff}
           isScreenSharing={isScreenSharing}
@@ -154,9 +177,14 @@ const VideoCallRoom = ({
   );
 };
 
-// Helper function to determine grid layout based on number of participants
-const getGridCols = (peerCount) => {
+// Helper function to determine grid layout based on number of participants and device type
+const getGridCols = (peerCount, isMobile) => {
   const totalParticipants = peerCount + 1; // +1 for local video
+  
+  if (isMobile) {
+    // Mobile: always use single column for better touch interaction
+    return 'grid-cols-1';
+  }
   
   if (totalParticipants === 1) return 'grid-cols-1';
   if (totalParticipants === 2) return 'grid-cols-2';

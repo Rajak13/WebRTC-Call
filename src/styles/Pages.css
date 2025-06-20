@@ -200,222 +200,194 @@
   font-size: 0.875rem;
 }
 
-/* CallPage styles */
-.call-page {
+/* CallPage & centered utility styles */
+.call-page, .page-center-container {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: #f9fafb;
-  color: #111827;
+  justify-content: center;
+  align-items: center;
+  background-color: #f3f4f6;
+  padding: 1rem;
 }
 
-.call-main {
-  flex: 1;
-  padding: 1.5rem;
-  max-width: 1600px;
+/* Call page specific styles */
+.call-page {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 0;
+  overflow: hidden;
+}
+
+/* Call loading styles */
+.call-loading-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem;
+}
+
+.call-loading-content {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 3rem 2rem;
+  border-radius: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 400px;
   width: 100%;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
 }
 
-.call-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-  background-color: white;
-  padding: 1rem 1.5rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+.call-loading-text {
+  margin-top: 1.5rem;
+  font-size: 1.125rem;
+  color: #374151;
+  font-weight: 500;
 }
 
-.call-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #111827;
+/* Call error styles */
+.call-error-container {
+  min-height: 100vh;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem;
 }
 
-.call-title-icon {
-  background-color: rgba(37, 99, 235, 0.1);
-  width: 2.5rem;
-  height: 2.5rem;
+.call-error-content {
+  text-align: center;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 3rem 2rem;
+  border-radius: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  max-width: 500px;
+  width: 100%;
+}
+
+.call-error-icon {
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1.5rem;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   border-radius: 9999px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #2563eb;
+  color: white;
 }
 
-.call-actions {
-  display: flex;
-  gap: 0.75rem;
+.call-error-icon svg {
+  width: 2rem;
+  height: 2rem;
 }
 
-.call-container {
-  flex: 1;
-  background-color: white;
-  border-radius: 0.75rem;
-  overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-  height: calc(100vh - 200px);
-  margin-top: 1rem;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.call-status {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin-left: 1rem;
-}
-
-.status-indicator {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-}
-
-.status-indicator.connected {
-  background-color: #10b981;
-}
-
-.status-indicator.connecting {
-  background-color: #f59e0b;
-}
-
-.status-indicator.disconnected {
-  background-color: #ef4444;
-}
-
-/* Loading state */
-.call-page.loading {
-  background-color: #f9fafb;
-}
-
-.loading-container {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.loading-content {
-  text-align: center;
-}
-
-.loading-text {
-  color: #6b7280;
-  margin-top: 1rem;
-  font-size: 1.125rem;
-  font-weight: 500;
-}
-
-/* Error state */
-.call-page.error {
-  background-color: #f9fafb;
-}
-
-.error-container {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-}
-
-.error-content {
-  max-width: 500px;
-  text-align: center;
-  background-color: white;
-  padding: 3rem;
-  border-radius: 1rem;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-}
-
-.error-icon {
-  width: 4rem;
-  height: 4rem;
-  color: #ef4444;
-  margin: 0 auto 1.5rem;
-}
-
-.error-title {
+.call-error-title {
   font-size: 1.5rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 1rem;
   color: #111827;
 }
 
-.error-message {
+.call-error-message {
   color: #6b7280;
   margin-bottom: 2rem;
-  line-height: 1.5;
+  line-height: 1.6;
+  font-size: 1rem;
 }
 
-.error-action {
-  margin-top: 1.5rem;
+.retry-button {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  padding: 0.75rem 2rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
 }
 
-/* Invite modal styles */
-.invite-modal {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+.retry-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
 }
 
-.invite-description {
-  color: #6b7280;
-  line-height: 1.5;
-}
-
-.invite-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.invite-label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-}
-
-.invite-input-group {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.invite-input {
-  flex: 1;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.375rem;
-  font-size: 0.875rem;
-}
-
-.invite-input:focus {
-  outline: none;
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
-}
-
-.invite-button {
-  white-space: nowrap;
-}
-
-.invite-help {
+.loading-text, .error-content p {
   margin-top: 1rem;
+  font-size: 1rem;
+  color: #4b5563;
 }
 
-.invite-help-text {
+.error-content {
+  text-align: center;
+  background: #fff;
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.error-content h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+/* Invite Modal Styles */
+.invite-modal-content p {
+  margin-bottom: 1.5rem;
+  color: #4b5563;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.invite-link-container {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.invite-link-input {
+  flex-grow: 1;
+  border: 2px solid #e5e7eb;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background-color: #f9fafb;
+  color: #1f2937;
   font-size: 0.875rem;
-  color: #6b7280;
+  transition: all 0.3s ease;
+  font-family: inherit;
+}
+
+.invite-link-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background-color: white;
+}
+
+.copy-button {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3);
+}
+
+.copy-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
 }
 
 @media (max-width: 768px) {
@@ -445,5 +417,55 @@
   
   .call-container {
     height: calc(100vh - 250px);
+  }
+  
+  /* Mobile responsive styles for call page */
+  .call-loading-content,
+  .call-error-content {
+    padding: 2rem 1.5rem;
+    margin: 1rem;
+  }
+  
+  .call-loading-text {
+    font-size: 1rem;
+  }
+  
+  .call-error-title {
+    font-size: 1.25rem;
+  }
+  
+  .call-error-message {
+    font-size: 0.875rem;
+  }
+  
+  .invite-link-container {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .invite-link-input {
+    width: 100%;
+  }
+  
+  .copy-button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .call-loading-content,
+  .call-error-content {
+    padding: 1.5rem 1rem;
+  }
+  
+  .call-error-icon {
+    width: 3rem;
+    height: 3rem;
+  }
+  
+  .call-error-icon svg {
+    width: 1.5rem;
+    height: 1.5rem;
   }
 } 

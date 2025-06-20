@@ -5,28 +5,16 @@ import { recordError, SignalingError } from '../utils/errorHandling';
 
 /**
  * Hook for Supabase Realtime-based WebRTC signaling
- * @param {string|null} currentRoomId - Current room ID for the call
+ * @param {string|null} roomId - Current room ID for the call
  * @returns {Object} Signaling methods and state
  */
-const useSupabaseRealtime = (currentRoomId) => {
-  // State for errors that occur during signaling
+const useSupabaseRealtime = (roomId) => {
   const [error, setError] = useState(null);
-
-  // Reference to keep track of our subscription
+  const roomIdRef = useRef(roomId);
   const subscriptionRef = useRef(null);
-  // Reference to prevent race conditions with room changes
-  const roomIdRef = useRef(currentRoomId);
-  
-  // Update ref when the roomId prop changes
-  useEffect(() => {
-    if (currentRoomId) {
-      // Only log this once when the room ID is first set
-      if (roomIdRef.current !== currentRoomId) {
-        console.log('Updating roomIdRef to:', currentRoomId);
-        }
-      roomIdRef.current = currentRoomId;
-    }
-  }, [currentRoomId]);
+
+  // Update the ref on every render to ensure it's always current
+  roomIdRef.current = roomId;
 
   // Reference to track unmounting state to avoid unnecessary error logs
   const isUnmountingRef = useRef(false);
@@ -109,7 +97,7 @@ const useSupabaseRealtime = (currentRoomId) => {
    */
   const sendSignal = useCallback(async (signal) => {
     // Use ref to prevent closure issues with stale roomId
-    const roomId = roomIdRef.current || currentRoomId;
+    const roomId = roomIdRef.current || roomId;
     
     if (!roomId) {
       const error = new SignalingError('Room ID is required for signaling. Please create or join a room first.');
@@ -157,7 +145,7 @@ const useSupabaseRealtime = (currentRoomId) => {
       setError(`Failed to send signal: ${err.message}`);
       throw err;
     }
-  }, [currentRoomId, safeRecordError]);
+  }, [roomId, safeRecordError]);
 
   /**
    * Listen for incoming signaling messages
@@ -166,7 +154,7 @@ const useSupabaseRealtime = (currentRoomId) => {
    */
   const listenForSignals = useCallback((onSignal) => {
     // Use ref to prevent closure issues with stale roomId
-    const roomId = roomIdRef.current || currentRoomId;
+    const roomId = roomIdRef.current || roomId;
     
     if (!roomId) {
       const error = new SignalingError('Room ID is required for listening to signals');
@@ -264,33 +252,21 @@ const useSupabaseRealtime = (currentRoomId) => {
       // Return a no-op cleanup function
       return () => {};
     }
-  }, [currentRoomId, safeRecordError]);
+  }, [roomId, safeRecordError]);
 
   // Clean up subscriptions when component unmounts or roomId changes
   useEffect(() => {
-    // Return cleanup function
+    // This function is returned by the effect and runs on cleanup
     return () => {
-      // Mark that we're unmounting to avoid logging normal cleanup as errors
-      isUnmountingRef.current = true;
-      
-      // Immediately clean up subscription instead of using setTimeout
       if (subscriptionRef.current) {
-        try {
-          subscriptionRef.current.unsubscribe();
-        } catch (err) {
-          // We're already unmounting, so just log the error if needed
-          if (!isUnmountingRef.current) {
-            safeRecordError(err, 'Supabase Realtime Cleanup');
-          }
-        } finally {
-          subscriptionRef.current = null;
-        }
+        console.log('Cleaning up Supabase subscription');
+        supabase.removeChannel(subscriptionRef.current);
+        subscriptionRef.current = null;
       }
-      
-      // Clear room ID ref to prevent stale values
+      // Also clear the room ID ref on cleanup
       roomIdRef.current = null;
     };
-  }, [currentRoomId, safeRecordError]);
+  }, [supabase]);
 
   return {
     error,
